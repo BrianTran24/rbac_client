@@ -1,4 +1,4 @@
-import 'package:bloc/bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rbac_client/rbac.dart';
 
 import '../domain/todo_item.dart';

@@ -1,35 +1,39 @@
 import 'package:rbac_client/rbac.dart';
 
+/// All fine-grained permissions used in this demo.
+/// Each entry maps to a specific action on a specific feature.
 enum DemoPermission implements PermissionKey {
-  todoRead('todo.read'),
-  todoWrite('todo.write'),
-  contactRead('contact.read'),
-  contactWrite('contact.write');
+  // ── TODO feature ──────────────────────────────────────────
+  todoView('todo.view'),
+  todoAdd('todo.add'),
+  todoToggle('todo.toggle'),
+  todoDelete('todo.delete'),
+
+  // ── Contact feature ───────────────────────────────────────
+  contactView('contact.view'),
+  contactAdd('contact.add'),
+  contactDelete('contact.delete');
 
   @override
   final String code;
-
   const DemoPermission(this.code);
 
   static DemoPermission? fromCode(String code) {
-    for (final permission in DemoPermission.values) {
-      if (permission.code == code) {
-        return permission;
-      }
+    for (final p in DemoPermission.values) {
+      if (p.code == code) return p;
     }
     return null;
   }
-}
 
-enum DemoRole { viewer, editor }
-
-extension DemoRolePermissions on DemoRole {
-  Set<DemoPermission> get permissions {
+  String get label {
     switch (this) {
-      case DemoRole.viewer:
-        return {DemoPermission.todoRead, DemoPermission.contactRead};
-      case DemoRole.editor:
-        return Set<DemoPermission>.from(DemoPermission.values);
+      case todoView:     return '👀 View TODOs';
+      case todoAdd:      return '➕ Add TODO';
+      case todoToggle:   return '✅ Toggle TODO';
+      case todoDelete:   return '🗑 Delete TODO';
+      case contactView:  return '👀 View Contacts';
+      case contactAdd:   return '➕ Add Contact';
+      case contactDelete:return '🗑 Delete Contact';
     }
   }
 }

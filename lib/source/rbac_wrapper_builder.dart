@@ -142,9 +142,7 @@ class RBACWrapperGenerator extends Generator {
     final returnType = method.returnType.getDisplayString(withNullability: true);
     final methodName = method.displayName;
     final generatedGuardCode =
-        annotation == null
-            ? ''
-            : _buildGuardCode(method, annotation.computeConstantValue());
+        annotation == null ? '' : _buildGuardCode(method, annotation);
     final requiresGuard = generatedGuardCode.isNotEmpty;
 
     if (requiresGuard && !_isFutureReturnType(returnType)) {
@@ -223,7 +221,8 @@ class RBACWrapperGenerator extends Generator {
     return buffer.toString();
   }
 
-  String _buildGuardCode(MethodElement method, DartObject? accessValue) {
+  String _buildGuardCode(MethodElement method, ElementAnnotation annotation) {
+    final accessValue = annotation.computeConstantValue();
     if (accessValue == null) return '';
 
     final type = accessValue.getField('type')?.toStringValue();
@@ -235,7 +234,8 @@ class RBACWrapperGenerator extends Generator {
         return '';
 
       case 'permission':
-        final permissionExpression = _permissionExpression(accessValue);
+        final permissionExpression =
+            _permissionExpression(accessValue, annotation);
         if (permissionExpression == null || permissionExpression.isEmpty) {
           throw InvalidGenerationSourceError(
             'Method ${method.displayName} has @Access.permission with an unsupported permission value. Use an enum value implementing PermissionKey (for example: AppPermission.userRead).',
@@ -277,32 +277,110 @@ class RBACWrapperGenerator extends Generator {
         returnType == 'FutureOr';
   }
 
-  String? _permissionExpression(DartObject accessValue) {
+  String? _permissionExpression(
+    DartObject accessValue,
+    ElementAnnotation annotation,
+  ) {
     final permissionField = accessValue.getField('permission');
-    if (permissionField == null || permissionField.isNull) return null;
 
-    final stringValue = permissionField.toStringValue();
-    if (stringValue != null) {
-      return "'${_escapeDartStringLiteral(stringValue)}'";
+    // ── 1. Const value: primitive literals & preserved variable refs ─────────
+    if (permissionField != null && !permissionField.isNull) {
+      final stringValue = permissionField.toStringValue();
+      if (stringValue != null) {
+        return "'${_escapeDartStringLiteral(stringValue)}'";
+      }
+      final intValue = permissionField.toIntValue();
+      if (intValue != null) return '$intValue';
+      final doubleValue = permissionField.toDoubleValue();
+      if (doubleValue != null) return '$doubleValue';
+      final boolValue = permissionField.toBoolValue();
+      if (boolValue != null) return '$boolValue';
+
+      final variable = permissionField.variable;
+      if (variable != null) {
+        final typeName = variable.enclosingElement?.displayName;
+        final valueName = variable.displayName;
+        if (typeName != null && valueName.isNotEmpty) {
+          return '$typeName.$valueName';
+        }
+        if (valueName.isNotEmpty) return valueName;
+      }
     }
 
-    final intValue = permissionField.toIntValue();
-    if (intValue != null) return '$intValue';
+    // ── 2. Fallback: parse the raw annotation source ──────────────────────────
+    // The analyzer's const evaluator can fail to resolve enum values that
+    // implement an interface (returning a null Object). We recover the literal
+    // expression directly from the annotation source text, for example:
+    //   @Access.permission(DemoPermission.todoView) -> DemoPermission.todoView
+    final fromSource = _permissionExpressionFromSource(annotation.toSource());
+    if (fromSource != null && fromSource.isNotEmpty) return fromSource;
 
-    final doubleValue = permissionField.toDoubleValue();
-    if (doubleValue != null) return '$doubleValue';
+    return null;
+  }
 
-    final boolValue = permissionField.toBoolValue();
-    if (boolValue != null) return '$boolValue';
+  /// Extracts the permission argument from an annotation source string such as
+  /// `@Access.permission(DemoPermission.todoView)` or
+  /// `@Access(type: 'permission', permission: DemoPermission.todoView)`.
+  String? _permissionExpressionFromSource(String source) {
+    const marker = '.permission(';
+    var start = source.indexOf(marker);
+    if (start >= 0) {
+      start += marker.length;
+      final expr = _extractBalanced(source, start);
+      return _stripNamedPrefix(expr, 'permission');
+    }
 
-    final variable = permissionField.variable;
-    final typeName = variable?.enclosingElement?.displayName;
-    final valueName = variable?.displayName;
-    if (typeName != null && valueName != null) {
-      return '$typeName.$valueName';
+    const namedMarker = 'permission:';
+    final namedStart = source.indexOf(namedMarker);
+    if (namedStart >= 0) {
+      var buffer = source.substring(namedStart + namedMarker.length);
+      final end = _findArgumentEnd(buffer);
+      buffer = buffer.substring(0, end).trim();
+      return buffer.isEmpty ? null : buffer;
     }
 
     return null;
+  }
+
+  /// Returns the substring from [start] up to the matching closing paren.
+  String _extractBalanced(String source, int start) {
+    var depth = 1;
+    final buffer = StringBuffer();
+    for (var i = start; i < source.length; i++) {
+      final ch = source[i];
+      if (ch == '(') depth++;
+      if (ch == ')') {
+        depth--;
+        if (depth == 0) break;
+      }
+      buffer.write(ch);
+    }
+    return buffer.toString().trim();
+  }
+
+  /// Removes a leading `name:` named-argument prefix, if present.
+  String? _stripNamedPrefix(String expr, String name) {
+    final trimmed = expr.trim();
+    final prefix = '$name:';
+    final result = trimmed.startsWith(prefix)
+        ? trimmed.substring(prefix.length).trim()
+        : trimmed;
+    return result.isEmpty ? null : result;
+  }
+
+  /// Finds the end index of the first top-level argument in [text].
+  int _findArgumentEnd(String text) {
+    var depth = 0;
+    for (var i = 0; i < text.length; i++) {
+      final ch = text[i];
+      if (ch == '(' || ch == '[' || ch == '{') depth++;
+      if (ch == ')' || ch == ']' || ch == '}') {
+        if (depth == 0) return i;
+        depth--;
+      }
+      if (ch == ',' && depth == 0) return i;
+    }
+    return text.length;
   }
 
   String _escapeDartStringLiteral(String value) {

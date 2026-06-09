@@ -20,7 +20,12 @@ abstract interface class PermissionKey {
 /// Declares how a repository method should be guarded.
 class Access {
   final String type;
-  final PermissionKey? permission;
+
+  // Stored as [Object?] so that Dart's const evaluator preserves the *actual*
+  // runtime type (e.g. the concrete enum) in the DartObject used by the code
+  // generator.  The public factory constructor still enforces [PermissionKey]
+  // at the call-site, giving full compile-time type-safety.
+  final Object? permission;
   final String? ownerParam;
 
   const Access._(this.type, {this.permission, this.ownerParam});
@@ -33,6 +38,9 @@ class Access {
       : this._('self', ownerParam: ownerParam);
 
   /// Require the current user to hold [permission].
-  const Access.permission(PermissionKey permission)
+  ///
+  /// [permission] must be a compile-time constant that implements [PermissionKey].
+  /// Using `enum YourPermission implements PermissionKey { ... }` is recommended.
+  const Access.permission(Object permission)
       : this._('permission', permission: permission);
 }
