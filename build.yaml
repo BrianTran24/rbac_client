@@ -1,0 +1,16 @@
+targets:
+  $default:
+    builders:
+      rbac_client|rbac_wrapper_builder:
+        enabled: true
+
+builders:
+  rbac_wrapper_builder:
+    import: "package:rbac_client/source/builder.dart"
+    builder_factories: ["rbacWrapperBuilder"]
+    build_extensions: {".dart": [".g.dart"]}
+    auto_apply: dependents
+    build_to: source
+    required_inputs: [".dart"]
+
+
