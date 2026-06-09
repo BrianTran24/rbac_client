@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rbac_client/widgets.dart';
 
+import '../../../core/permissions.dart';
 import 'todo_cubit.dart';
 
 class TodoPage extends StatefulWidget {
@@ -39,12 +41,16 @@ class _TodoPageState extends State<TodoPage> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () async {
-                      await context.read<TodoCubit>().add(_controller.text);
-                      _controller.clear();
-                    },
-                    child: const Text('Add'),
+                  // Hidden entirely when the user lacks todoAdd.
+                  PermissionGate(
+                    permission: DemoPermission.todoAdd,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await context.read<TodoCubit>().add(_controller.text);
+                        _controller.clear();
+                      },
+                      child: const Text('Add'),
+                    ),
                   ),
                 ],
               ),
@@ -71,10 +77,14 @@ class _TodoPageState extends State<TodoPage> {
                                 context.read<TodoCubit>().toggle(item.id),
                           ),
                           title: Text(item.title),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () =>
-                                context.read<TodoCubit>().remove(item.id),
+                          // Delete icon disappears without todoDelete.
+                          trailing: PermissionGate(
+                            permission: DemoPermission.todoDelete,
+                            child: IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () =>
+                                  context.read<TodoCubit>().remove(item.id),
+                            ),
                           ),
                         );
                       },

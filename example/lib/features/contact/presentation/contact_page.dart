@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rbac_client/widgets.dart';
 
+import '../../../core/permissions.dart';
 import 'contact_cubit.dart';
 
 class ContactPage extends StatefulWidget {
@@ -49,16 +51,19 @@ class _ContactPageState extends State<ContactPage> {
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await context.read<ContactCubit>().add(
-                          name: _nameController.text,
-                          phone: _phoneController.text,
-                        );
-                        _nameController.clear();
-                        _phoneController.clear();
-                      },
-                      child: const Text('Add contact'),
+                    child: PermissionGate(
+                      permission: DemoPermission.contactAdd,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          await context.read<ContactCubit>().add(
+                            name: _nameController.text,
+                            phone: _phoneController.text,
+                          );
+                          _nameController.clear();
+                          _phoneController.clear();
+                        },
+                        child: const Text('Add contact'),
+                      ),
                     ),
                   ),
                 ],
@@ -82,10 +87,13 @@ class _ContactPageState extends State<ContactPage> {
                         return ListTile(
                           title: Text(item.name),
                           subtitle: Text(item.phone),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () =>
-                                context.read<ContactCubit>().remove(item.id),
+                          trailing: PermissionGate(
+                            permission: DemoPermission.contactDelete,
+                            child: IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: () =>
+                                  context.read<ContactCubit>().remove(item.id),
+                            ),
                           ),
                         );
                       },

@@ -1,33 +1,67 @@
-# Flutter TODO + Contact Demo
+# Flutter TODO + Contact Demo (RBAC Client)
 
-Demo theo 3 phần rõ ràng:
+A demo app showcasing `rbac_client` with a clear 3-layer architecture:
 
-1. Repository -> RepositoryImpl (+ GuardedRepository)
-2. Cubit (state management)
-3. UI
+1. **Repository → RepositoryImpl** (+ generated `*Guarded`)
+2. **Cubit** (state management, catches `ForbiddenException`)
+3. **UI** (Widgets)
 
-## Cấu trúc
+> 📖 Step-by-step integration guide: [`../doc/usage_guide.md`](../doc/usage_guide.md)
 
-- `lib/features/todo/domain/*`: abstraction cho TODO
-- `lib/features/todo/data/*`: in-memory impl + RBAC guard cho TODO
-- `lib/features/todo/presentation/*`: `TodoCubit` + `TodoPage`
-- `lib/features/contact/domain/*`: abstraction cho Contact
-- `lib/features/contact/data/*`: in-memory impl + RBAC guard cho Contact
-- `lib/features/contact/presentation/*`: `ContactCubit` + `ContactPage`
-- `lib/core/auth.dart`: session store + resolver + role controller
-- `lib/core/permissions.dart`: `PermissionKey` enum và role mapping
+## Structure
 
-## Role
+```
+lib/
+  core/
+    permissions.dart    # DemoPermission (enum implements PermissionKey)
+    auth.dart           # MockAuthRepository, SessionStore, Resolver, AuthController
+  features/
+    todo/
+      domain/           # TodoRepository (@GenerateRBACWrapper) + TodoItem
+      data/             # InMemoryTodoRepository (+ generated TodoRepositoryGuarded)
+      presentation/     # TodoCubit + TodoPage
+    contact/
+      domain/           # ContactRepository (@GenerateRBACWrapper) + ContactItem
+      data/             # InMemoryContactRepository (+ generated ContactRepositoryGuarded)
+      presentation/     # ContactCubit + ContactPage
+  main.dart             # Login flow + wiring
+```
 
-- `viewer`: chỉ đọc TODO + Contact
-- `editor`: đọc/ghi toàn bộ
+## Permissions
 
-Trong UI có dropdown đổi role để thấy RBAC hoạt động trực tiếp.
+Each repository action maps to one permission:
+
+| Feature | Permissions |
+|---|---|
+| TODO | `todo.view`, `todo.add`, `todo.toggle`, `todo.delete` |
+| Contact | `contact.view`, `contact.add`, `contact.delete` |
+
+## Mock login (random permissions)
+
+`MockAuthRepository.login(username)` simulates a backend API:
+
+- Each login returns a **random subset of permissions** (50% chance per permission).
+- The `admin` user always gets **all** permissions.
+
+In the UI you can:
+
+- **Log in** as one of the sample users (`alice`, `bob`, `charlie`, `admin`).
+- View a **permissions badge** plus a bottom sheet listing granted/denied permissions.
+- Tap **Shuffle** to log in again as the same user for a new random permission set.
+- **Log out** to return to the login screen.
+
+Missing a permission blocks the action and shows a `Missing permission: ...` error.
+
+## Generate code
+
+```zsh
+dart run build_runner build --delete-conflicting-outputs
+```
 
 ## Run
 
 ```zsh
-cd /Users/hieutran/AndroidStudioProjects/rbac_client/example/flutter_todo_contact_demo
+cd example
 flutter pub get
 flutter run
 ```
@@ -35,7 +69,7 @@ flutter run
 ## Test
 
 ```zsh
-cd /Users/hieutran/AndroidStudioProjects/rbac_client/example/flutter_todo_contact_demo
+cd example
 flutter test
 ```
 

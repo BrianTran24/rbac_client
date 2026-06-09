@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rbac_client/rbac.dart';
+import 'package:rbac_client/widgets.dart';
 
 import 'core/auth.dart';
 import 'core/permissions.dart';
@@ -88,7 +90,14 @@ class RootPage extends StatelessWidget {
         if (!authController.isLoggedIn) {
           return LoginPage(authController: authController);
         }
-        return HomePage(authController: authController);
+        // Expose the current user's permissions to the subtree so any
+        // PermissionGate below can show/hide itself. Rebuilds on login change.
+        return PermissionScope(
+          permissions: Set<PermissionKey>.from(
+            authController.current!.granted,
+          ),
+          child: HomePage(authController: authController),
+        );
       },
     );
   }
