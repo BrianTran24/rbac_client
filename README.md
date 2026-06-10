@@ -87,3 +87,4 @@ TODO + Contact app following the Repository → Cubit → UI architecture, with 
 mock login that returns random permissions.
 
 
+# rbac_client
