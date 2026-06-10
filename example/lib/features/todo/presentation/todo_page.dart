@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rbac_client/widgets.dart';
 
+import '../../../core/capabilities.dart';
+import '../../../core/capability_banner.dart';
 import '../../../core/permissions.dart';
 import 'todo_cubit.dart';
 
@@ -27,6 +29,14 @@ class _TodoPageState extends State<TodoPage> {
       builder: (context, state) {
         return Column(
           children: [
+            // Visible only when the "manage todos" capability is available:
+            // requires todoAdd + todoDelete AND the viewTodos prerequisite.
+            CapabilityGate(
+              capability: manageTodos,
+              child: const CapabilityBanner(
+                label: 'Full TODO management enabled',
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Row(

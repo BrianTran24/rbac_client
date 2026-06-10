@@ -6,7 +6,8 @@ Reusable RBAC package that contains:
 - `@Access.*` method-level guard annotations
 - shared runtime contracts (`RBACSessionStore`, `RBACUserContextResolver`)
 - generic guard helpers (`UserContext`, `requirePermission`, `assertSelfScope`)
-- Flutter UI helpers (`PermissionScope`, `PermissionGate`) via `package:rbac_client/widgets.dart`
+- capability model for feature-level access (`Capability`, `FeatureCapability`, `CapabilityEvaluator`)
+- Flutter UI helpers (`PermissionScope`, `PermissionGate`, `CapabilityGate`) via `package:rbac_client/widgets.dart`
 
 ## Entry points
 

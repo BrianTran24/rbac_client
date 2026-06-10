@@ -21,8 +21,9 @@ that automatically produces permission-checking guard classes.
 9. [Step 7 – Assemble the guarded wrapper](#step-7--assemble-the-guarded-wrapper)
 10. [Step 8 – Use it in Cubit & UI](#step-8--use-it-in-cubit--ui)
 11. [Hiding widgets by permission (PermissionGate)](#hiding-widgets-by-permission-permissiongate)
-12. [@Access reference](#access-reference)
-13. [Troubleshooting](#troubleshooting)
+12. [Capabilities (feature-level access)](#capabilities-feature-level-access)
+13. [@Access reference](#access-reference)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -413,6 +414,92 @@ if (PermissionScope.has(context, DemoPermission.todoDelete)) {
 
 > 🔒 `PermissionGate` is a **UI convenience**, not a security boundary. Always
 > keep the repository-level `@Access` guards — they are the real enforcement.
+
+---
+
+## Capabilities (feature-level access)
+
+Permissions are fine-grained (one per API action). A **Capability** is a higher
+level concept: it represents a **user-facing feature** an actor interacts with.
+
+The mental model:
+
+- An **actor** interacts with the app.
+- The app runs **use cases** to fulfil a request; each use case may call APIs,
+  which is what a `PermissionKey` protects.
+- A **Capability** groups the permissions a feature needs, and can depend on
+  **other capabilities** as prerequisites.
+
+A capability is **available** when:
+
+1. all of its `requiredPermissions` are granted, **and**
+2. all of its `prerequisites` are (recursively) available.
+
+### Define capabilities
+
+```dart
+import 'package:rbac_client/rbac.dart';
+
+// "View" is the base capability of the feature.
+const viewTodos = FeatureCapability(
+  'todo.view',
+  requiredPermissions: {AppPermission.todoView},
+);
+
+// "Manage" needs add + delete AND depends on being able to view first.
+const manageTodos = FeatureCapability(
+  'todo.manage',
+  requiredPermissions: {AppPermission.todoAdd, AppPermission.todoDelete},
+  prerequisites: {viewTodos}, // prerequisite capability
+);
+```
+
+### Evaluate capabilities
+
+```dart
+final evaluator = CapabilityEvaluator(currentUser.permissions);
+
+evaluator.isAvailable(manageTodos);        // bool (checks perms + prerequisites)
+evaluator.missingPermissions(manageTodos); // Set<PermissionKey> not granted
+evaluator.unmetPrerequisites(manageTodos); // Set<Capability> not available
+evaluator.availableFrom(allCapabilities);  // List<Capability> currently usable
+
+final result = evaluator.evaluate(manageTodos);
+// result.isAvailable / result.missingPermissions / result.unmetPrerequisites
+```
+
+> A prerequisite cycle (a config bug) throws `CapabilityCycleError`.
+
+### Gate widgets by capability
+
+`CapabilityGate` works exactly like `PermissionGate`, but evaluates a whole
+capability (permissions **and** prerequisites) using the permissions from the
+nearest `PermissionScope`:
+
+```dart
+import 'package:rbac_client/widgets.dart';
+
+CapabilityGate(
+  capability: manageTodos, // hidden unless add+delete granted AND viewTodos met
+  child: const Text('Full TODO management enabled'),
+);
+```
+
+### Build an access/permissions screen
+
+A common need is a screen that lists every capability and lets the user tap one
+to inspect its dependencies (required permissions + prerequisite capabilities,
+each with its status). The example app ships a reference implementation:
+[`example/lib/features/access/access_page.dart`](../example/lib/features/access/access_page.dart).
+
+It builds a `CapabilityEvaluator` from the granted permissions and, for each
+capability, shows `evaluate(capability)` results in an expandable tile:
+
+```dart
+final evaluator = CapabilityEvaluator(grantedPermissions);
+final result = evaluator.evaluate(capability);
+// result.isAvailable / result.missingPermissions / result.unmetPrerequisites
+```
 
 ---
 

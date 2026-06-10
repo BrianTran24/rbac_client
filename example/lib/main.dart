@@ -5,6 +5,7 @@ import 'package:rbac_client/widgets.dart';
 
 import 'core/auth.dart';
 import 'core/permissions.dart';
+import 'features/access/access_page.dart';
 import 'features/contact/data/contact_repository_impl.dart';
 import 'features/contact/domain/contact_repository.dart';
 import 'features/contact/presentation/contact_cubit.dart';
@@ -217,6 +218,21 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.verified_user_outlined),
             label: Text('${login.granted.length}/${DemoPermission.values.length}'),
             onPressed: () => _showPermissionsSheet(context, login),
+          ),
+          // Capabilities / access screen
+          IconButton(
+            tooltip: 'Access & capabilities',
+            icon: const Icon(Icons.account_tree_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => AccessPage(
+                    username: login.username,
+                    grantedPermissions: Set<PermissionKey>.from(login.granted),
+                  ),
+                ),
+              );
+            },
           ),
           // Shuffle permissions for same user
           IconButton(

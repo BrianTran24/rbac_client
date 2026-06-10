@@ -47,6 +47,8 @@ In the UI you can:
 
 - **Log in** as one of the sample users (`alice`, `bob`, `charlie`, `admin`).
 - View a **permissions badge** plus a bottom sheet listing granted/denied permissions.
+- Open the **Access screen** (tree icon) to browse every capability and tap one
+  to inspect its dependencies — required permissions and prerequisite capabilities.
 - Tap **Shuffle** to log in again as the same user for a new random permission set.
 - **Log out** to return to the login screen.
 

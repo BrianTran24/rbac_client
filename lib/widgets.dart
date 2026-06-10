@@ -7,5 +7,6 @@
 /// ```
 library;
 
+export 'src/widgets/capability_gate.dart';
 export 'src/widgets/permission_gate.dart';
 

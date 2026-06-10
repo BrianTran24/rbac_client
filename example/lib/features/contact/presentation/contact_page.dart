@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rbac_client/widgets.dart';
 
+import '../../../core/capabilities.dart';
+import '../../../core/capability_banner.dart';
 import '../../../core/permissions.dart';
 import 'contact_cubit.dart';
 
@@ -29,6 +31,14 @@ class _ContactPageState extends State<ContactPage> {
       builder: (context, state) {
         return Column(
           children: [
+            // Visible only when the "manage contacts" capability is available:
+            // requires contactAdd + contactDelete AND the viewContacts prerequisite.
+            CapabilityGate(
+              capability: manageContacts,
+              child: const CapabilityBanner(
+                label: 'Full contact management enabled',
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
