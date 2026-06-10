@@ -1,0 +1,14 @@
+# Files to exclude from published package
+
+# Example build artifacts
+example/build/
+
+# Local IDE files
+.idea/
+.vscode/
+
+# Tooling
+.dart_tool/
+.packages
+.pub/
+

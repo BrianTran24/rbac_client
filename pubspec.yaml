@@ -1,7 +1,6 @@
 name: rbac_client
 description: Reusable RBAC annotations, runtime contracts, and code generator.
 version: 0.1.0
-publish_to: 'none'
 
 environment:
   sdk: ^3.9.2
@@ -19,3 +18,7 @@ dev_dependencies:
   build_runner: ^2.4.13
   flutter_test:
     sdk: flutter
+
+repository: https://github.com/BrianTran24/rbac_client.git
+homepage: https://github.com/BrianTran24/rbac_client
+
